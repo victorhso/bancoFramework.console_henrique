@@ -4,14 +4,25 @@
     {
         public float Saldo { get; private set; }
 
-        public void AtualizarSaldo(float valor)
+        public void Depositar(float valor)
         {
-            Saldo = valor;
+            if (valor > 0)
+            {
+                Saldo += valor;
+            }
+        }
+
+        public void Sacar(float valor)
+        {
+            if (valor > 0 && Saldo >= valor)
+            {
+                Saldo -= valor;
+            }
         }
 
         public void ExibirSaldo()
         {
-            Console.WriteLine($"Saldo atual é: R$ {Saldo:F2}");
+            Console.WriteLine($"Seu saldo atual é: R$ {Saldo:F2}");
         }
     }
 }

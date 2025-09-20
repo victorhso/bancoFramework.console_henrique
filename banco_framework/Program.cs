@@ -1,4 +1,5 @@
 ﻿using Application;
+using CpfCnpjLibrary;
 using Domain.Model;
 
 internal class Program
@@ -17,39 +18,80 @@ internal class Program
         }
     }
 
-    static Cliente Identificacao()
+    public static Cliente Identificacao()
     {
-        int id;
-        float saldo;
         var cliente = new Cliente();
+        var erros = new List<string>();
 
-        Console.WriteLine("Seu número de identificação:");
-        while (!int.TryParse(Console.ReadLine(), out id))
+        while (true)
         {
-            Console.WriteLine("ID inválido. Digite um número válido:");
+            Console.Clear();
+            erros.Clear();
+
+            Console.WriteLine("Seja bem vindo ao banco Framework");
+            Console.WriteLine("Por favor, identifique-se");
+            Console.WriteLine("");
+
+            Console.WriteLine("Seu número de identificação:");
+            string? idInput = Console.ReadLine();
+
+            Console.WriteLine("Seu nome:");
+            string? nomeInput = Console.ReadLine();
+
+            Console.WriteLine("Seu CPF:");
+            string? cpfInput = Console.ReadLine();
+
+            Console.Write("Seu saldo inicial: R$");
+            string? saldoInput = Console.ReadLine();
+
+            if (!int.TryParse(idInput, out int id) || id < 0)
+            {
+                erros.Add("ID inválido. Deve ser um número positivo.");
+            }
+
+            if (string.IsNullOrWhiteSpace(nomeInput))
+            {
+                erros.Add("Nome inválido. O nome não pode estar em branco.");
+            }
+
+            if (!Cpf.Validar(cpfInput))
+            {
+                erros.Add("CPF digitado não é válido.");
+            }
+
+            if (!float.TryParse(saldoInput, out float saldo) || saldo < 0)
+            {
+                erros.Add("Saldo inválido. Deve ser um valor numérico positivo.");
+            }
+
+            if (erros.Count > 0)
+            {
+                Console.Clear();
+                Console.WriteLine("Foram encontrados os seguintes erros:");
+                Console.ForegroundColor = ConsoleColor.Red;
+                foreach (var erro in erros)
+                {
+                    Console.WriteLine($"- {erro}");
+                }
+                Console.ResetColor();
+                Console.WriteLine("\nPressione qualquer tecla para tentar novamente...");
+                Console.ReadKey();
+                continue;
+            }
+
+            cliente.Id = id;
+            cliente.Nome = nomeInput;
+            cliente.Cpf = cpfInput;
+            cliente.Depositar(saldo);
+            break;
         }
-        cliente.SetId(id);
 
-        Console.WriteLine("Seu nome:");
-        cliente.SetNome(Console.ReadLine());
-
-        Console.WriteLine("Seu CPF:");
-        cliente.SetCpf(Console.ReadLine());
-
-        Console.Write("Seu saldo: R$");
-        while (!float.TryParse(Console.ReadLine(), out saldo) || saldo < 0)
-        {
-            Console.Write("Saldo inválido. Digite um valor válido: R$");
-        }
-        cliente.AtualizarSaldo(saldo);
         Console.Clear();
-
         Console.WriteLine($"Como posso ajudar {cliente.Nome}?");
-
         return cliente;
     }
 
-    static void Menu(Cliente cliente)
+    public static void Menu(Cliente cliente)
     {
         Console.WriteLine("1 - Depósito");
         Console.WriteLine("2 - Saque");
@@ -57,64 +99,47 @@ internal class Program
         Console.WriteLine("--------------");
         Console.WriteLine("Selecione uma opção:");
 
-        ConsoleKeyInfo keyInfo = Console.ReadKey();
+        string? input = Console.ReadKey().KeyChar.ToString();
         Console.WriteLine();
-        string input = keyInfo.KeyChar.ToString();
-        ExibeOpcaoSelecionada(input, cliente);
         RealizaOperacao(input, cliente);
     }
 
-    static void ExibeOpcaoSelecionada(string input, Cliente cliente)
+    private static void RealizaOperacao(string? input, Cliente cliente)
     {
-        Console.ForegroundColor = ConsoleColor.Yellow;
-        switch (input)
-        {
-            case "1":
-                Console.WriteLine("Depósito");
-                break;
-            case "2":
-                Console.WriteLine("Saque");
-                break;
-            case "3":
-                Console.WriteLine("Sair");
-                Console.ResetColor();
-                Environment.Exit(0);
-                break;
-            default:
-                Console.Clear();
-                Menu(cliente);
-                break;
-        }
-        Console.ResetColor();
-    }
-
-    static void RealizaOperacao(string input, Cliente cliente)
-    {
-        float valor;
         Console.Clear();
         switch (input)
         {
             case "1":
-                Console.Write("Digite o valor: R$");
-                while (!float.TryParse(Console.ReadLine(), out valor) || valor < 0)
-                {
-                    Console.WriteLine("Valor inválido. Digite um valor válido: R$");
-                }
-                cliente.AtualizarSaldo(Calculo.Soma(cliente.Saldo, valor));
+                Console.WriteLine("Depósito");
+                float valorDeposito = AtualizaSaldo("Digite o valor: R$");
+                cliente.Depositar(valorDeposito);
+                cliente.ExibirSaldo();
                 break;
             case "2":
-                Console.Write("Digite o valor: R$");
-                while (!float.TryParse(Console.ReadLine(), out valor) || valor < 0)
-                {
-                    Console.WriteLine("Valor inválido. Digite um valor válido: R$");
-                }
-                cliente.AtualizarSaldo(Calculo.Subtrair(cliente.Saldo, valor));
+                Console.WriteLine("Saque");
+                float valorSaque = AtualizaSaldo("Digite o valor: R$");
+                cliente.Sacar(valorSaque);
+                cliente.ExibirSaldo();
+                break;
+            case "3":
+                Console.WriteLine("Saindo...");
+                Environment.Exit(0);
                 break;
             default:
-                Console.Clear();
-                Menu(cliente);
+                Console.WriteLine("Opção inválida.");
                 break;
         }
-        cliente.ExibirSaldo();
+        Console.WriteLine();
+    }
+
+    private static float AtualizaSaldo(string prompt)
+    {
+        Console.Write(prompt);
+        float valor;
+        while (!float.TryParse(Console.ReadLine(), out valor) || valor < 0)
+        {
+            Console.Write("Valor inválido. Digite um valor positivo: R$");
+        }
+        return valor;
     }
 }
